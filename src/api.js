@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:5001/api", // Đặt baseURL chung
+    baseURL: "https://backend-chines-learning.onrender.com/api", // Đặt baseURL chung
     headers: {
       "Content-Type": "application/json",
     },
