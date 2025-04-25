@@ -1,92 +1,86 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addWord, fetchTranslation, fetchPinyin } from '../api'; // Import API functions
+import { addWord, fetchTranslation, fetchPinyin } from '../api';
 
 const AddVocabulary = () => {
   const navigate = useNavigate();
-  const [vocabularies, setVocabularies] = useState([{ hanzi: '', pinyin: '', meaning: '' }]);
+  const [vocabularies, setVocabularies] = useState([
+    { hanzi: '', pinyin: '', meaning: '' },
+  ]);
   const [message, setMessage] = useState('');
-  const [currentHanzi, setCurrentHanzi] = useState(''); // Trạng thái riêng biệt cho hanzi
-  const [debouncedHanzi, setDebouncedHanzi] = useState(''); // Trạng thái để debounce
+  const [debounceTimers, setDebounceTimers] = useState({});
 
-  // Hàm xử lý thay đổi khi nhập từ Hán tự
-  const handleChange = async (index, e) => {
+  // Hàm xử lý thay đổi khi nhập từ
+  const handleChange = (index, e) => {
     const { name, value } = e.target;
 
-    // Cập nhật trạng thái của hanzi
-    if (name === 'hanzi') {
-      setCurrentHanzi(value);
-    }
-
-    // Cập nhật lại danh sách vocabularies
     const updatedVocabularies = [...vocabularies];
     updatedVocabularies[index][name] = value;
     setVocabularies(updatedVocabularies);
+
+    if (name === 'hanzi') {
+      // Xóa timer cũ nếu có
+      if (debounceTimers[index]) {
+        clearTimeout(debounceTimers[index]);
+      }
+
+      const newTimers = { ...debounceTimers };
+      newTimers[index] = setTimeout(() => {
+        autoFillFromHanzi(index, value);
+      }, 800); // Debounce 800ms
+
+      setDebounceTimers(newTimers);
+    }
   };
 
-  // Hàm debounce: cập nhật giá trị hanzi đã thay đổi sau một khoảng thời gian
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedHanzi(currentHanzi); // Cập nhật giá trị sau khi có độ trễ
-    }, 1000); // Thời gian debounce: 1000ms = 1s
+  // Tự động lấy Pinyin và nghĩa
+  const autoFillFromHanzi = async (index, hanziValue) => {
+    if (!hanziValue.trim()) return;
 
-    // Cleanup function để hủy timeout nếu người dùng nhập quá nhanh
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [currentHanzi]);
+    try {
+      const [meaning, pinyin] = await Promise.all([
+        fetchTranslation(hanziValue),
+        fetchPinyin(hanziValue),
+      ]);
 
-  // Hàm gọi API khi giá trị hanzi thay đổi (sau debounce)
-  useEffect(() => {
-    const fetchData = async () => {
-      if (debouncedHanzi.trim()) {
-        try {
-          // Lấy Pinyin và Nghĩa từ API
-          const meaning = await fetchTranslation(debouncedHanzi);
-          const pinyin = await fetchPinyin(debouncedHanzi);
+      const updated = [...vocabularies];
+      updated[index].meaning = meaning || '';
+      updated[index].pinyin = pinyin || '';
+      setVocabularies(updated);
+    } catch (error) {
+      console.error('Lỗi khi tự động điền:', error);
+    }
+  };
 
-          // Cập nhật lại vocabularies
-          const updatedVocabularies = [...vocabularies];
-          updatedVocabularies[0].meaning = meaning || '';
-          updatedVocabularies[0].pinyin = pinyin || '';
-          setVocabularies(updatedVocabularies);
-        } catch (error) {
-          console.error('Lỗi khi gọi API:', error);
-        }
-      }
-    };
-
-    fetchData();
-  }, [debouncedHanzi, vocabularies]);
-
-  // Hàm thêm từ vựng mới vào
+  // Thêm dòng từ mới
   const handleAddVocabulary = () => {
     setVocabularies([...vocabularies, { hanzi: '', pinyin: '', meaning: '' }]);
   };
 
+  // Xóa dòng
   const handleRemoveVocabulary = (index) => {
-    const updatedVocabularies = vocabularies.filter((_, i) => i !== index);
-    setVocabularies(updatedVocabularies);
+    const updated = vocabularies.filter((_, i) => i !== index);
+    setVocabularies(updated);
   };
 
+  // Submit dữ liệu
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const filteredVocabularies = vocabularies.filter(
+    const filtered = vocabularies.filter(
       (item) => item.hanzi.trim() && item.meaning.trim()
     );
 
-    if (filteredVocabularies.length === 0) {
+    if (filtered.length === 0) {
       setMessage('Vui lòng nhập ít nhất một từ vựng.');
       return;
     }
 
     try {
-      // Gọi API để thêm từ vựng
-      const response = await addWord({ vocabularies: filteredVocabularies });
+      const response = await addWord({ vocabularies: filtered });
 
-      if (response.status === 200) {
+      if (response.status === 201) {
         setMessage('Lưu từ vựng thành công!');
-        setTimeout(() => navigate('/dashboard'), 1500);
+        setTimeout(() => navigate('/'), 1500);
       } else {
         setMessage('Có lỗi xảy ra khi lưu!');
       }
