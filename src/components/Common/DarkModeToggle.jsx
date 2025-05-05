@@ -1,6 +1,5 @@
-// components/Common/DarkModeToggle.jsx
 import { useState, useEffect } from 'react';
-import { MoonIcon, SunIcon } from '@heroicons/react/outline';
+import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
 
 export default function DarkModeToggle() {
   const [darkMode, setDarkMode] = useState(false);
@@ -25,7 +24,7 @@ export default function DarkModeToggle() {
       aria-label="Toggle dark mode"
     >
       {darkMode ? (
-        <SunIcon className="h-6 w-6 text-yellow-300" />
+        <SunIcon className="h-6 w-6 text-yellow-400" />
       ) : (
         <MoonIcon className="h-6 w-6 text-gray-600" />
       )}

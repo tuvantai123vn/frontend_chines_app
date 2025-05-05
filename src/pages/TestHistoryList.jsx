@@ -26,7 +26,7 @@ export default function TestHistoryList() {
   if (loading) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
         Lịch sử kiểm tra
       </h1>

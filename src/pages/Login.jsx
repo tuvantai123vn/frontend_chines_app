@@ -1,8 +1,7 @@
 // src/pages/Auth/Login.jsx
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import LoginForm from "../components/Auth/LoginForm";
-import logo from "../assets/chines_learning_blue.svg"; // Thay bằng đường dẫn logo thực tế
+import logo from "../assets/trace.svg";
 
 const loginPageVariants = {
   hidden: { opacity: 0 },
@@ -15,7 +14,7 @@ export default function Login() {
       variants={loginPageVariants}
       initial="hidden"
       animate="visible"
-      className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4"
+      className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300 flex items-center justify-center p-4"
     >
       <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8">
         {/* Phần giới thiệu */}
@@ -23,21 +22,14 @@ export default function Login() {
           <img 
             src={logo} 
             alt="Logo" 
-            className="h-16 mx-auto md:mx-0 mb-4"
+            className="w-full max-w-[300px] h-auto mx-auto md:mx-0 mb-4"
           />
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-4xl font-bold">
             Học tiếng Trung thật dễ dàng
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
             Hệ thống học từ vựng thông minh với SRS và bài kiểm tra tương tác
           </p>
-          <div className="hidden md:block mt-8">
-            <img 
-              src="/images/auth-illustration.png" // Thay bằng hình ảnh thực tế
-              alt="Học tập"
-              className="max-w-full h-auto"
-            />
-          </div>
         </div>
 
         {/* Form đăng nhập */}

@@ -42,8 +42,6 @@ export default function WordList({ word }) {
       
       <div className="mt-3 text-sm text-gray-500">
         <p><span className="font-semibold">Độ khó:</span> {word.efactor || 0}</p>
-        <p><span className="font-semibold">Lần ôn tập:</span> {word.repetition || 0}</p>
-        <p><span className="font-semibold">Ôn tập tiếp theo:</span> {new Date(word.nextReview).toLocaleDateString()}</p>
       </div>
 
       {/* Nếu bạn có trường examples trong dữ liệu */}

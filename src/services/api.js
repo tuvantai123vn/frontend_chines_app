@@ -7,7 +7,6 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  console.log(token)
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -19,7 +18,8 @@ export const logoutAPI = () => api.post('/auth/logout');
 
 // Vocabulary
 export const listVocabulary = () => api.get('/vocab');
-export const addVocabulary = (data) => api.post('/vocab', data);
+export const addVocabulary = (data) =>
+  api.post(`/vocab`, data);
 export const getWordMeaning = (params) => api.get('/vocab/get-pinyin-meaning', params);
 
 // Tests

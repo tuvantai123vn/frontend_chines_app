@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import RegisterForm from "../components/Auth/RegisterForm";
-import logo from "../assets/react.svg";
+import logo from "../assets/trace.svg";
 
 const registerPageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -15,17 +15,17 @@ export default function Register() {
       variants={registerPageVariants}
       initial="hidden"
       animate="visible"
-      className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4"
+      className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300 flex items-center justify-center p-4"
     >
       <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8">
         {/* Phần giới thiệu */}
         <div className="w-full md:w-1/2 text-center md:text-left space-y-4">
-          <img 
+        <img 
             src={logo} 
             alt="Logo" 
-            className="h-16 mx-auto md:mx-0 mb-4"
+            className="w-full max-w-[300px] h-auto mx-auto md:mx-0 mb-4"
           />
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-4xl font-bold">
             Bắt đầu hành trình học tập
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
@@ -43,7 +43,6 @@ export default function Register() {
         {/* Form đăng ký */}
         <div className="w-full md:w-1/2">
           <RegisterForm />
-          
           <div className="mt-6 text-center md:hidden">
             <p className="text-gray-600 dark:text-gray-400">
               Đã có tài khoản?{" "}
