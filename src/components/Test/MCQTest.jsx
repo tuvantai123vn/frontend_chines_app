@@ -3,11 +3,48 @@ import { motion } from 'framer-motion';
 import AnimatedButton from '../Common/AnimatedButton';
 
 export default function MCQTest({ data, onSubmit }) {
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState({});
 
-  const handleSubmit = () => {
-    if (!selectedOption) return;
-    onSubmit(selectedOption);
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center mt-10 text-red-500">
+        Không có dữ liệu để làm bài trắc nghiệm.
+      </div>
+    );
+  }
+
+  const currentQuestion = data[currentQuestionIndex];
+  const totalQuestions = data.length;
+
+  const handleOptionSelect = (option) => {
+    setSelectedOptions(prev => ({
+      ...prev,
+      [currentQuestionIndex]: option
+    }));
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+    }
+  };
+
+  const handleFinalSubmit = () => {
+    const answers = data.map((question, index) => ({
+      testId: question.testId,
+      questionId: question.question.index,
+      answer: selectedOptions[index] || null,
+      correctAnswer: question.correctAnswer,
+      meaning: question.question.meaning,
+    }));
+    onSubmit(answers);
   };
 
   return (
@@ -16,45 +53,67 @@ export default function MCQTest({ data, onSubmit }) {
       animate={{ opacity: 1 }}
       className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
     >
+      <div className="flex justify-between items-center mb-6">
+        <div className="text-gray-500 dark:text-gray-400">
+          Câu {currentQuestionIndex + 1}/{totalQuestions}
+        </div>
+      </div>
+
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-          {data.question || "Câu hỏi trắc nghiệm"}
+          {currentQuestion.question.meaning}
         </h2>
-        {data.word && (
-          <p className="text-4xl font-semibold text-center mb-6 text-gray-900 dark:text-gray-100">
-            {data.word}
-          </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {currentQuestion.question.options.map((option, index) => {
+          const isSelected = selectedOptions[currentQuestionIndex] === option;
+
+          return (
+            <motion.button
+              key={index}
+              whileTap={{ scale: 0.96 }}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => handleOptionSelect(option)}
+              className={`w-full py-3 px-4 rounded-lg text-center transition-all duration-200 border-2
+                ${isSelected
+                  ? 'bg-green-500 border-green-600 text-white shadow-md'
+                  : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}
+              `}
+            >
+              {option}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-between mt-8 gap-4">
+        <AnimatedButton
+          onClick={handlePreviousQuestion}
+          disabled={currentQuestionIndex === 0}
+          className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-gray-800 dark:text-white"
+        >
+          Quay lại
+        </AnimatedButton>
+
+        {currentQuestionIndex < totalQuestions - 1 ? (
+          <AnimatedButton
+            onClick={handleNextQuestion}
+            disabled={!selectedOptions[currentQuestionIndex]}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            Tiếp theo
+          </AnimatedButton>
+        ) : (
+          <AnimatedButton
+            onClick={handleFinalSubmit}
+            disabled={!selectedOptions[currentQuestionIndex]}
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+          >
+            Nộp bài
+          </AnimatedButton>
         )}
       </div>
-
-      <div className="space-y-3">
-        {data.options.map((option, index) => (
-          <motion.div
-            key={index}
-            whileHover={{ scale: 1.02 }}
-            className={`p-4 rounded-lg cursor-pointer border-2 transition-colors
-              ${selectedOption === option 
-                ? 'border-green-500 bg-green-50 dark:bg-green-900' 
-                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'}
-            `}
-            onClick={() => setSelectedOption(option)}
-          >
-            <span className="text-gray-700 dark:text-gray-200">{option}</span>
-          </motion.div>
-        ))}
-      </div>
-
-      <AnimatedButton
-        onClick={handleSubmit}
-        disabled={!selectedOption}
-        className={`w-full mt-6 py-3 text-lg ${
-          selectedOption 
-            ? 'bg-green-500 hover:bg-green-600' 
-            : 'bg-gray-400 cursor-not-allowed'
-        } text-white rounded-lg`}
-      >
-        Kiểm tra đáp án
-      </AnimatedButton>
     </motion.div>
   );
 }

@@ -17,25 +17,46 @@ const itemVariants = {
   visible: { y: 0, opacity: 1 }
 };
 
-export default function WordList({ words }) {
+export default function WordList({ word }) {
+     // Kiểm tra nếu word không tồn tại
+  if (!word) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <p>Dữ liệu từ không hợp lệ</p>
+      </div>
+    );
+  }
+
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="grid grid-cols-1 md:grid-cols-2 gap-4"
-    >
-      {words.map((word) => (
-        <motion.div key={word._id} variants={itemVariants}>
-          <WordCard word={word} />
-        </motion.div>
-      ))}
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div className="flex justify-between items-start">
+        <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+          {word.hanzi || 'Không có từ'}
+        </h3>
+        <span className="text-sm text-gray-500">{word.pinyin}</span>
+      </div>
       
-      {words.length === 0 && (
-        <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-          Không có từ vựng nào được tìm thấy
+      <p className="text-gray-600 dark:text-gray-300 mt-2">
+        <span className="font-semibold">Nghĩa:</span> {word.meaning || 'Không có định nghĩa'}
+      </p>
+      
+      <div className="mt-3 text-sm text-gray-500">
+        <p><span className="font-semibold">Độ khó:</span> {word.efactor || 0}</p>
+        <p><span className="font-semibold">Lần ôn tập:</span> {word.repetition || 0}</p>
+        <p><span className="font-semibold">Ôn tập tiếp theo:</span> {new Date(word.nextReview).toLocaleDateString()}</p>
+      </div>
+
+      {/* Nếu bạn có trường examples trong dữ liệu */}
+      {word.examples?.length > 0 && (
+        <div className="mt-3">
+          <h4 className="font-semibold text-gray-700 dark:text-gray-200">Ví dụ:</h4>
+          <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400">
+            {word.examples.map((example, index) => (
+              <li key={index}>{example}</li>
+            ))}
+          </ul>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

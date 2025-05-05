@@ -1,12 +1,13 @@
-// components/Layout.jsx
 import Navbar from './Navbar';
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="pt-16"> {/* Padding top bằng chiều cao Navbar */}
-        {children}
+      <main className="flex-1 pt-16">
+        <div className="container mx-auto px-4 py-6">
+          {children}
+        </div>
       </main>
     </div>
   );

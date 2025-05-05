@@ -43,18 +43,6 @@ export default function Login() {
         {/* Form đăng nhập */}
         <div className="w-full md:w-1/2">
           <LoginForm />
-          
-          <div className="mt-6 text-center md:hidden">
-            <p className="text-gray-600 dark:text-gray-400">
-              Chưa có tài khoản?{" "}
-              <Link
-                to="/register"
-                className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium"
-              >
-                Tạo tài khoản mới
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </motion.div>

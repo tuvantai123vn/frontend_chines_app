@@ -1,24 +1,66 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { addVocabulary } from '../../services/api';
+import { addVocabulary, getWordMeaning } from '../../services/api';
+import { toastHelper } from '../../utils/ToastContainer';
 import AnimatedButton from '../Common/AnimatedButton';
 
 export default function AddWordModal({ isOpen, onClose, onSubmit }) {
-  const [formData, setFormData] = useState({
-    simplified: '',
-    traditional: '',
-    pinyin: '',
-    definition: ''
-  });
+  const [hanziList, setHanziList] = useState([{ hanzi: '', pinyin: '', meaning: '' }]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (index, field, value) => {
+    const updated = [...hanziList];
+    updated[index][field] = value;
+    setHanziList(updated);
+  };
+
+  const handleBlur = async (index) => {
+    const hanzi = hanziList[index]?.hanzi?.trim();
+    if (!hanzi) return;
+
+    try {
+      const res = await getWordMeaning({ params: { hanzi } });
+      const updated = [...hanziList];
+      updated[index].pinyin = res.data.pinyin || '';
+      updated[index].meaning = res.data.meaning || '';
+      setHanziList(updated);
+    } catch (error) {
+      toastHelper.error(`Không thể lấy nghĩa cho "${hanzi}"`);
+    }
+  };
+
+  const handleAddRow = () => {
+    setHanziList([...hanziList, { hanzi: '', pinyin: '', meaning: '' }]);
+  };
+
+  const handleRemoveRow = (index) => {
+    const updated = [...hanziList];
+    updated.splice(index, 1);
+    setHanziList(updated);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const validWords = hanziList.filter(
+      (w) => w.hanzi && w.pinyin && w.meaning
+    );
+
+    if (validWords.length === 0) {
+      toastHelper.error("Bạn cần nhập ít nhất 1 từ hợp lệ");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      await addVocabulary(formData);
+      await addVocabulary(validWords);
+      toastHelper.success("Thêm từ vựng thành công!");
       onSubmit();
       onClose();
-    } catch (error) {
-      console.error('Error adding word:', error);
+    } catch (err) {
+      console.error('Lỗi khi thêm từ:', err);
+      toastHelper.error("Thêm từ vựng thất bại!");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -33,75 +75,92 @@ export default function AddWordModal({ isOpen, onClose, onSubmit }) {
       <motion.div
         initial={{ y: -50 }}
         animate={{ y: 0 }}
-        className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md"
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-3xl"
       >
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Thêm từ mới</h2>
-        
+        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Thêm nhiều từ</h2>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Chữ giản thể
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.simplified}
-              onChange={(e) => setFormData({...formData, simplified: e.target.value})}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            />
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="text-left text-sm text-gray-600 dark:text-gray-300">
+                  <th className="p-2">Chữ Hán</th>
+                  <th className="p-2">Pinyin</th>
+                  <th className="p-2">Nghĩa</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {hanziList.map((item, index) => (
+                  <tr key={index} className="border-t dark:border-gray-600">
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={item.hanzi}
+                        onChange={(e) => handleChange(index, 'hanzi', e.target.value)}
+                        onBlur={() => handleBlur(index)}
+                        placeholder="Nhập Hán tự"
+                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={item.pinyin}
+                        onChange={(e) => handleChange(index, 'pinyin', e.target.value)}
+                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={item.meaning}
+                        onChange={(e) => handleChange(index, 'meaning', e.target.value)}
+                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                      />
+                    </td>
+                    <td className="p-2">
+                      {hanziList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRow(index)}
+                          className="text-red-500 hover:underline text-sm"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Chữ phồn thể (tùy chọn)
-            </label>
-            <input
-              type="text"
-              value={formData.traditional}
-              onChange={(e) => setFormData({...formData, traditional: e.target.value})}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Pinyin
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.pinyin}
-              onChange={(e) => setFormData({...formData, pinyin: e.target.value})}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Nghĩa
-            </label>
-            <textarea
-              required
-              value={formData.definition}
-              onChange={(e) => setFormData({...formData, definition: e.target.value})}
-              className="w-full px-3 py-2 border rounded-lg h-24 dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <AnimatedButton
+          <div className="flex justify-between mt-4">
+            <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700"
+              onClick={handleAddRow}
+              className="text-blue-500 hover:underline text-sm"
             >
-              Hủy
-            </AnimatedButton>
-            <AnimatedButton
-              type="submit"
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
-            >
-              Thêm từ
-            </AnimatedButton>
+              + Thêm dòng
+            </button>
+
+            <div className="flex gap-3">
+              <AnimatedButton
+                type="button"
+                onClick={onClose}
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700"
+              >
+                Hủy
+              </AnimatedButton>
+              <AnimatedButton
+                type="submit"
+                disabled={isLoading}
+                className="bg-green-500 hover:bg-green-600 text-white"
+              >
+                {isLoading ? 'Đang thêm...' : 'Thêm tất cả'}
+              </AnimatedButton>
+            </div>
           </div>
         </form>
       </motion.div>

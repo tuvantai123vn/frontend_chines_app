@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import {listVocabulary, addVocabulary } from '../services/vocabulary';
+import { listVocabulary, addVocabulary } from '../services/api';
 import WordList from '../components/Vocabulary/WordList';
 import AddWordModal from '../components/Vocabulary/AddWordModal';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { 
+  visible: {
     opacity: 1,
     transition: { staggerChildren: 0.1 }
   }
@@ -22,29 +22,46 @@ export default function Vocabulary() {
   const [words, setWords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadVocabulary();
-  }, []);
-
-  const loadVocabulary = async () => {
+  const loadVocabulary = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const { data } = await listVocabulary();
-      setWords(data);
-    } catch (error) {
-      console.error('Failed to load vocabulary:', error);
+      const response = await listVocabulary();
+
+      let vocabularyData = [];
+
+      // Xử lý linh hoạt các dạng phản hồi từ API
+      if (Array.isArray(response.data)) {
+        vocabularyData = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        vocabularyData = response.data.data;
+      } else if (response.data && typeof response.data === 'object') {
+        vocabularyData = Object.values(response.data);
+      }
+
+      setWords(vocabularyData);
+    } catch (err) {
+      console.error('Error loading vocabulary:', err);
+      setError('Không thể tải dữ liệu từ vựng.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadVocabulary();
+  }, [loadVocabulary]);
 
   const handleAddWord = async (newWord) => {
     try {
       await addVocabulary(newWord);
       await loadVocabulary();
       setIsModalOpen(false);
-    } catch (error) {
-      console.error('Failed to add word:', error);
+    } catch (err) {
+      console.error('Error adding word:', err);
+      setError('Không thể thêm từ mới.');
     }
   };
 
@@ -63,24 +80,43 @@ export default function Vocabulary() {
           </button>
         </div>
 
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : words.length === 0 ? (
+        {/* Khi đang tải */}
+        {isLoading && (
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner />
+          </div>
+        )}
+
+        {/* Khi lỗi */}
+        {!isLoading && error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+            {error}
+          </div>
+        )}
+
+        {/* Khi không có từ vựng */}
+        {!isLoading && !error && words.length === 0 && (
           <div className="text-center text-gray-500 dark:text-gray-400 py-12">
             Bạn chưa có từ vựng nào. Hãy thêm từ đầu tiên!
           </div>
-        ) : (
+        )}
+
+        {/* Khi có từ vựng */}
+        {!isLoading && !error && words.length > 0 && (
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {words.map((word) => (
-              <motion.div key={word.id} variants={itemVariants}>
-                <WordList word={word} />
-              </motion.div>
-            ))}
+            {words.map((word, index) => {
+              const wordKey = word?._id || word?.id || `word-${index}`;
+              return (
+                <motion.div key={wordKey} variants={itemVariants}>
+                  <WordList word={word} />
+                </motion.div>
+              );
+            })}
           </motion.div>
         )}
 

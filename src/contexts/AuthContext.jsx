@@ -1,130 +1,54 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';  // Sử dụng useNavigate thay vì useHistory
-import { AppToastContainer } from '../utils/ToastContainer'; // Import AppToastContainer
-import STATUS from '../utils/status'; // Import status từ file utils
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
-// Đảm bảo rằng AuthContextProvider sẽ bao phủ toàn bộ ứng dụng
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const navigate = useNavigate();  // Sử dụng useNavigate thay vì useHistory
+  const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // ✅ Load từ localStorage khi khởi động
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.Authorization = `Bearer ${token}`;
-      fetchUserData();
-    }
-  }, [token]);
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
 
-  const fetchUserData = async () => {
-    try {
-      const res = await axios.get('/auth/me');
-      setUser(res.data);
-    } catch (error) {
-      console.error('Error fetching user data', error);
-      logout();
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    } else {
+      setUser(null);
     }
-  };
 
-  const login = async (email, password) => {
-    setLoading(true);
-    try {
-      const res = await axios.post('http://localhost:5001/api/auth/login', { email, password });
+    setLoading(false);
+  }, []);
 
-      const { status, message, user, token } = res.data;
-      if (status === STATUS.OK.code) {
-        setToken(token);
-        setUser(user);
-        localStorage.setItem('token', token);
-        AppToastContainer(message || 'Đăng nhập thành công!', 3000, 'success');
-        navigate('/');  // Dùng navigate thay vì history.push
-      } else {
-        AppToastContainer(message || 'Đăng nhập thất bại!', 3000, 'error');
-      }
-    } catch (error) {
-      AppToastContainer('Lỗi đăng nhập! Kiểm tra lại email và mật khẩu.', 3000, 'error');
-    } finally {
-      setLoading(false);
-    }
+  // ✅ Lưu token và user khi login
+  const login = ({ user, token }) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    setUser(user);
+    setToken(token);
   };
 
   const logout = () => {
-    setToken(null);
-    setUser(null);
     localStorage.removeItem('token');
-    AppToastContainer('Đăng xuất thành công!', 3000, 'info');
-    navigate('/login');  // Dùng navigate thay vì history.push
-  };
-
-  const register = async (name, email, password) => {
-    setLoading(true);
-    try {
-      const res = await axios.post('/auth/register', { name, email, password });
-
-      const { status, message } = res.data;
-      if (status === STATUS.CREATED.code) {
-        AppToastContainer(message || 'Đăng ký thành công!', 3000, 'success');
-        login(email, password); // Tự động đăng nhập sau khi đăng ký thành công
-      } else {
-        AppToastContainer(message || 'Đăng ký thất bại!', 3000, 'error');
-      }
-    } catch (error) {
-      AppToastContainer('Lỗi khi đăng ký!', 3000, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const forgotPassword = async (email) => {
-    try {
-      const res = await axios.post('/auth/forgot-password', { email });
-      const { status, message } = res.data;
-      if (status === STATUS.OK.code) {
-        AppToastContainer(message || 'Email hướng dẫn đổi mật khẩu đã được gửi!', 3000, 'info');
-      } else {
-        AppToastContainer(message || 'Lỗi khi gửi email!', 3000, 'error');
-      }
-    } catch (error) {
-      AppToastContainer('Lỗi khi gửi email!', 3000, 'error');
-    }
-  };
-
-  const resetPassword = async (token, newPassword) => {
-    try {
-      const res = await axios.post('/auth/reset-password', { token, newPassword });
-      const { status, message } = res.data;
-      if (status === STATUS.OK.code) {
-        AppToastContainer(message || 'Mật khẩu đã được thay đổi!', 3000, 'success');
-        navigate('/login');
-      } else {
-        AppToastContainer(message || 'Lỗi khi thay đổi mật khẩu!', 3000, 'error');
-      }
-    } catch (error) {
-      AppToastContainer('Lỗi khi thay đổi mật khẩu!', 3000, 'error');
-    }
+    localStorage.removeItem('user');
+    setUser(null);
+    setToken(null);
+    navigate('/login');
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        register,
-        forgotPassword,
-        resetPassword,
-        loading,
-      }}
-    >
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
 };

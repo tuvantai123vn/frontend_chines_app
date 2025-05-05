@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import MCQTest from "../components/Test/MCQTest";
 import EssayTest from "../components/Test/EssayTest";
-import AnswerFeedback from "../components/Test/AnswerFeedback";
 import LoadingSpinner from "../components/Common/LoadingSpinner";
+import { generateMCQ, generateEssay, submitTest } from "../services/api";
 
 const testTypes = {
   MCQ: { name: "Trắc nghiệm", component: MCQTest },
@@ -12,99 +12,93 @@ const testTypes = {
 };
 
 export default function Learn() {
+  const [testType, setTestType] = useState(null);
   const [currentTest, setCurrentTest] = useState(null);
-  const [testType, setTestType] = useState("MCQ");
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadTest();
+    if (testType) loadTest(testType);
   }, [testType]);
 
-  const loadTest = async () => {
+  const loadTest = async (type) => {
     try {
       setIsLoading(true);
-      const { data } =
-        testType === "MCQ" ? await generateMCQ() : await generateEssay();
-      setCurrentTest(data);
-    } catch (error) {
-      console.error("Error loading test:", error);
+      setErrorMessage("");
+      const response = type === "MCQ" ? await generateMCQ() : await generateEssay();
+      const questions = response.data.data;
+
+      if (!questions || questions.length === 0) {
+        setErrorMessage("Không có từ vựng để tạo bài kiểm tra. Hãy thêm từ trước.");
+        setCurrentTest(null);
+      } else {
+        setCurrentTest({ id: Date.now(), questions });
+      }
+    } catch (err) {
+      console.error("Error loading test:", err);
+      setErrorMessage("Lỗi khi tải bài kiểm tra.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmit = async (userAnswer) => {
+  const handleSubmit = async (answers) => {
     try {
-      const { data } = await submitTest({
-        testId: currentTest.id,
-        answers: [userAnswer],
-      });
-
-      setIsCorrect(data.isCorrect);
-      setShowFeedback(true);
-
-      if (data.isCorrect) {
-        setTimeout(() => {
-          setShowFeedback(false);
-          loadTest();
-        }, 1500);
-      }
-    } catch (error) {
-      console.error("Submission error:", error);
+      const response = await submitTest({ testType, answers });
+      const testId = response?.data?.testId;
+      navigate(testId ? `/test-detail/${testId}` : "/");
+    } catch (err) {
+      console.error("Submit error:", err);
     }
   };
 
-  if (isLoading) return <LoadingSpinner fullScreen />;
+  const renderTestOptions = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-12">
+      {Object.entries(testTypes).map(([key, { name }]) => (
+        <motion.div
+          key={key}
+          whileHover={{ scale: 1.05 }}
+          onClick={() => setTestType(key)}
+          className="cursor-pointer bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center hover:bg-green-100 dark:hover:bg-green-900 transition-all"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{name}</h2>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            {key === "MCQ" ? "Chọn đáp án đúng cho nghĩa" : "Tự gõ chữ Hán chính xác"}
+          </p>
+        </motion.div>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-3xl mx-auto px-4 py-20">
-        <div className="flex gap-4 mb-8 justify-center">
-          {Object.entries(testTypes).map(([key, { name }]) => (
-            <button
-              key={key}
-              onClick={() => setTestType(key)}
-              className={`px-6 py-2 rounded-full ${
-                testType === key
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700"
-              }`}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-10">
+      {isLoading && <LoadingSpinner fullScreen />}
+      {!testType && !isLoading && renderTestOptions()}
 
-        <AnimatePresence mode="wait">
+      {errorMessage && (
+        <p className="text-center text-red-500 mt-10 text-lg">{errorMessage}</p>
+      )}
+
+      <AnimatePresence mode="wait">
+        {currentTest?.questions && (
           <motion.div
-            key={currentTest?.id}
+            key={currentTest.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
+            className="mt-8"
           >
-            {currentTest &&
-              (() => {
-                const TestComponent = testTypes[testType].component;
-                return (
-                  <TestComponent data={currentTest} onSubmit={handleSubmit} />
-                );
-              })()}
+            {(() => {
+              const TestComponent = testTypes[testType].component;
+              return (
+                <TestComponent data={currentTest.questions} onSubmit={handleSubmit} />
+              );
+            })()}
           </motion.div>
-        </AnimatePresence>
-
-        <AnswerFeedback
-          isOpen={showFeedback}
-          isCorrect={isCorrect}
-          onContinue={() => {
-            setShowFeedback(false);
-            loadTest();
-          }}
-        />
-      </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

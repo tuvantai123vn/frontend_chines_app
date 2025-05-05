@@ -17,11 +17,24 @@ export default function StreakCalendar({ streakData = [] }) {
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  // Sửa hàm getDayStatus để xử lý dữ liệu không hợp lệ
   const getDayStatus = (date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    return streakData.includes(dateString) ? 'completed' : 
-           isToday(date) ? 'today' : 
-           'default';
+    try {
+      const dateString = format(date, 'yyyy-MM-dd');
+      
+      // Kiểm tra nếu streakData không phải array
+      if (!Array.isArray(streakData)) {
+        console.error('streakData phải là mảng');
+        return isToday(date) ? 'today' : 'default';
+      }
+      
+      return streakData.includes(dateString) ? 'completed' : 
+             isToday(date) ? 'today' : 
+             'default';
+    } catch (error) {
+      console.error('Lỗi xử lý ngày:', error);
+      return 'default';
+    }
   };
 
   return (

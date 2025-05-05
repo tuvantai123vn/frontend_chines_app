@@ -1,6 +1,4 @@
 // src/pages/Home.jsx
-
-// Thêm dòng này ở phần imports
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -60,7 +58,7 @@ export default function Home() {
           {/* Hero Section */}
           <motion.div variants={itemVariants} className="text-center">
             <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
-              {user ? `Chào mừng trở lại, ${user.username}!` : "Học tiếng Trung thông minh"}
+              {user ? `Chào mừng trở lại, ${user.name}!` : "Học tiếng Trung thông minh"}
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400">
               {user ? "Hôm nay bạn muốn học gì?" : "Hệ thống học tập tích hợp SRS và AI"}

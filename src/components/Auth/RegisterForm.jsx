@@ -1,28 +1,62 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { registerAPI, loginAPI } from "../../services/api";
+import { AppToastContainer } from "../../utils/ToastContainer";
 import { useAuth } from "../../contexts/AuthContext";
 import AnimatedButton from "../Common/AnimatedButton";
-import { useState } from "react";
 
 const registerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } }
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
 };
 
 export default function RegisterForm() {
-  const { register, loading } = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Mật khẩu không khớp!");
+    if (form.password !== form.confirmPassword) {
+      AppToastContainer("Mật khẩu không khớp!", 3000, "error");
       return;
     }
-    await register(name, email, password);
+
+    let email = form.email.trim();
+    if (!email.includes("@")) {
+      email += "@gmail.com";
+    }
+
+    try {
+      setLoading(true);
+      const res = await registerAPI({
+        name: form.name,
+        email,
+        password: form.password,
+      });
+
+      if (res.data?.status === 201) {
+        AppToastContainer("Đăng ký thành công!", 3000, "success");
+
+        const loginRes = await loginAPI({ email, password: form.password });
+        const { user, token } = loginRes.data;
+        login({ user, token });
+        navigate("/");
+      } else {
+        AppToastContainer(res.data?.message || "Đăng ký thất bại!", 3000, "error");
+      }
+    } catch (err) {
+      AppToastContainer("Lỗi đăng ký!", 3000, "error");
+      console.error("Register error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,57 +71,10 @@ export default function RegisterForm() {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Họ và tên
-          </label>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Mật khẩu
-          </label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Nhập lại mật khẩu
-          </label>
-          <input
-            type="password"
-            required
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+        <InputField label="Họ và tên" name="name" value={form.name} onChange={handleChange} />
+        <InputField label="Email" name="email" value={form.email} onChange={handleChange} />
+        <InputField label="Mật khẩu" name="password" type="password" value={form.password} onChange={handleChange} />
+        <InputField label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} />
 
         <AnimatedButton
           type="submit"
@@ -98,15 +85,29 @@ export default function RegisterForm() {
         </AnimatedButton>
 
         <p className="text-center text-gray-600 dark:text-gray-400">
-          Đã có tài khoản?{' '}
-          <Link
-            to="/login"
-            className="text-green-600 hover:text-green-700 dark:text-green-400"
-          >
+          Đã có tài khoản?{" "}
+          <Link to="/login" className="text-green-600 hover:text-green-700 dark:text-green-400">
             Đăng nhập ngay
           </Link>
         </p>
       </form>
     </motion.div>
+  );
+}
+
+function InputField({ label, name, type = "text", ...props }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        {label}
+      </label>
+      <input
+        name={name}
+        type={type}
+        required
+        {...props}
+        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+      />
+    </div>
   );
 }

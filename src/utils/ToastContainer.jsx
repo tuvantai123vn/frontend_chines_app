@@ -1,6 +1,8 @@
-import { ToastContainer as ReactToastifyContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// src/utils/ToastContainer.js
+import { ToastContainer as ReactToastifyContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
+// Dùng trong App.jsx
 export const AppToastContainer = () => (
   <ReactToastifyContainer
     position="top-right"
@@ -8,16 +10,16 @@ export const AppToastContainer = () => (
     hideProgressBar={false}
     newestOnTop
     closeOnClick
-    rtl={false}
     pauseOnFocusLoss
     draggable
     pauseOnHover
   />
 );
 
+// Gọi toast đơn giản trong component
 export const toastHelper = {
-  success: (message) => toast.success(message),
-  error: (message) => toast.error(message),
-  info: (message) => toast.info(message),
-  warn: (message) => toast.warn(message),
+  success: (msg) => toast.success(msg),
+  error: (msg) => toast.error(msg),
+  info: (msg) => toast.info(msg),
+  warn: (msg) => toast.warn(msg),
 };

@@ -1,13 +1,20 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import AnimatedButton from '../Common/AnimatedButton';
+import { useLocation, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import AnimatedButton from "../Common/AnimatedButton";
 
-export default function TestResult({ result }) {
+export default function TestResult() {
+  const location = useLocation();
+  const result = location.state;
+
+  if (!result) {
+    return <div className="text-center mt-20 text-red-500">Không có kết quả để hiển thị.</div>;
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-2xl mx-auto"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-2xl mx-auto mt-10"
     >
       <h2 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
         Kết quả bài kiểm tra
@@ -34,22 +41,20 @@ export default function TestResult({ result }) {
           Chi tiết kết quả
         </h3>
         <div className="space-y-2">
-          {result.questions.map((question, index) => (
+          {result.questions.map((q, index) => (
             <div
               key={index}
               className={`p-3 rounded-lg ${
-                question.correct 
-                  ? 'bg-green-50 dark:bg-green-900' 
-                  : 'bg-red-50 dark:bg-red-900'
+                q.correct ? 'bg-green-50 dark:bg-green-900' : 'bg-red-50 dark:bg-red-900'
               }`}
             >
-              <p className="font-medium">{question.word}</p>
+              <p className="font-medium">{q.word}</p>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Đáp án của bạn: {question.userAnswer}
+                Đáp án của bạn: {q.userAnswer || '—'}
               </p>
-              {!question.correct && (
+              {!q.correct && (
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Đáp án đúng: {question.correctAnswer}
+                  Đáp án đúng: {q.correctAnswer}
                 </p>
               )}
             </div>
@@ -65,7 +70,7 @@ export default function TestResult({ result }) {
         >
           Làm bài mới
         </AnimatedButton>
-        
+
         <AnimatedButton
           as={Link}
           to="/vocabulary"
